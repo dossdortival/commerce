@@ -1,0 +1,53 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}Create Listing{% endblock %}
+
+{% block body %}
+    <h2 class="mb-4">Create New Listing</h2>
+    
+    <form action="{% url 'create_listing' %}" method="post" class="col-md-8">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_title">Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div class="text-danger">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_description">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div class="text-danger">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_starting_bid">Starting Bid ($)</label>
+            {{ form.starting_bid }}
+            {% if form.starting_bid.errors %}
+                <div class="text-danger">{{ form.starting_bid.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_image_url">Image URL (optional)</label>
+            {{ form.image_url }}
+            {% if form.image_url.errors %}
+                <div class="text-danger">{{ form.image_url.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_category">Category (optional)</label>
+            {{ form.category }}
+            {% if form.category.errors %}
+                <div class="text-danger">{{ form.category.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Create Listing</button>
+    </form>
+{% endblock %}
