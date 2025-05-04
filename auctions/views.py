@@ -94,3 +94,21 @@ def listing(request, listing_id):
         "comment_form": CommentForm(),
         "comments": listing.comments.all().order_by('-created_at')
     })
+
+@login_required
+def watchlist(request):
+    return render(request, "auctions/watchlist.html", {
+        "listings": request.user.watchlist.all()
+    })
+
+@login_required
+def watchlist_add(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    request.user.watchlist.add(listing)
+    return redirect("listing", listing_id=listing_id)
+
+@login_required
+def watchlist_remove(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    request.user.watchlist.remove(listing)
+    return redirect("listing", listing_id=listing_id)
