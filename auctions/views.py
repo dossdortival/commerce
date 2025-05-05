@@ -1,11 +1,12 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.contrib import messages
 
-from .models import User, Listing, Bid, Comment, Category
+from .models import User, Listing, Bid, Category
 from .forms import ListingForm, BidForm, CommentForm
 
 
@@ -84,6 +85,7 @@ def create_listing(request):
         "form": form,
     })
 
+
 def listing(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
     in_watchlist = request.user in listing.watchers.all() if request.user.is_authenticated else False
@@ -95,11 +97,13 @@ def listing(request, listing_id):
         "comments": listing.comments.all().order_by('-created_at')
     })
 
+
 @login_required
 def watchlist(request):
     return render(request, "auctions/watchlist.html", {
         "listings": request.user.watchlist.all()
     })
+
 
 @login_required
 def watchlist_add(request, listing_id):
@@ -107,8 +111,66 @@ def watchlist_add(request, listing_id):
     request.user.watchlist.add(listing)
     return redirect("listing", listing_id=listing_id)
 
+
 @login_required
 def watchlist_remove(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
     request.user.watchlist.remove(listing)
     return redirect("listing", listing_id=listing_id)
+
+
+@login_required
+def bid(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    if request.method == "POST":
+        form = BidForm(request.POST)
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+            if amount >= listing.starting_bid and (not listing.bids.exists() or amount > listing.current_price):
+                bid = Bid(amount=amount, bidder=request.user, listing=listing)
+                bid.save()
+                listing.current_price = amount
+                listing.save()
+                messages.success(request, "Bid placed successfully!")
+            else:
+                messages.error(request, "Bid must be at least as large as starting bid and greater than any other bids.")
+    return redirect("listing", listing_id=listing_id)
+
+
+@login_required
+def close(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    if request.user == listing.creator:
+        if listing.bids.exists():
+            highest_bid = listing.bids.first()
+            listing.winner = highest_bid.bidder
+        listing.active = False
+        listing.save()
+        messages.success(request, "Auction closed successfully!")
+    return redirect("listing", listing_id=listing_id)
+
+@login_required
+def comment(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.author = request.user
+            comment.listing = listing
+            comment.save()
+    return redirect("listing", listing_id=listing_id)
+
+
+def categories(request):
+    return render(request, "auctions/categories.html", {
+        "categories": Category.objects.all()
+    })
+
+
+def category(request, category_id):
+    category = Category.objects.get(pk=category_id)
+    return render(request, "auctions/category.html", {
+        "category": category,
+        "listings": category.listing_set.filter(active=True)
+    })

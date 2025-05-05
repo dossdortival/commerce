@@ -1,7 +1,118 @@
 {% extends "auctions/layout.html" %}
 
-{% block body %}
-    <h2>Listings</h2>
+{% block title %}{{ listing.title }}{% endblock %}
 
-    TODO
+{% block body %}
+    <div class="listing-details">
+        <h2>{{ listing.title }}</h2>
+        
+        {% if not listing.active %}
+            <div class="alert alert-warning">
+                This auction is closed.
+                {% if user == listing.winner %}
+                    <strong>You won this auction!</strong>
+                {% elif listing.winner %}
+                    Winner: {{ listing.winner.username }}
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                {% if listing.image_url %}
+                    <img src="{{ listing.image_url }}" alt="{{ listing.title }}" class="img-fluid mb-3">
+                {% endif %}
+                
+                <p><strong>Description:</strong></p>
+                <p>{{ listing.description }}</p>
+                
+                <p><strong>Current Price:</strong> ${{ listing.current_price }}</p>
+                <p><strong>Starting Bid:</strong> ${{ listing.starting_bid }}</p>
+                <p><strong>Listed by:</strong> {{ listing.creator.username }}</p>
+                
+                {% if listing.category %}
+                    <p><strong>Category:</strong> {{ listing.category.name }}</p>
+                {% else %}
+                    <p><strong>Category:</strong> No category listed</p>
+                {% endif %}
+                
+                <p class="text-muted">Created: {{ listing.created_at|date:"M d, Y H:i" }}</p>
+            </div>
+            
+            <div class="col-md-6">
+                {% if user.is_authenticated %}
+                    <!-- Watchlist Toggle -->
+                    <div class="watchlist-section mb-4">
+                        {% if in_watchlist %}
+                            <form action="{% url 'watchlist_remove' listing.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Remove from Watchlist</button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'watchlist_add' listing.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success">Add to Watchlist</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Bidding Section -->
+                    {% if listing.active %}
+                        <div class="bid-section mb-4">
+                            <h4>Place a Bid</h4>
+                            <form action="{% url 'bid' listing.id %}" method="post">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    {{ bid_form.amount }}
+                                    <small class="form-text text-muted">
+                                        Bid must be at least ${{ listing.current_price|add:"0.01" }}
+                                    </small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Place Bid</button>
+                            </form>
+                            
+                            {% if user == listing.creator %}
+                                <form action="{% url 'close' listing.id %}" method="post" class="mt-3">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning">Close Auction</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Comments Section -->
+                    <div class="comments-section">
+                        <h4>Comments</h4>
+                        <form action="{% url 'comment' listing.id %}" method="post">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                {{ comment_form.content }}
+                            </div>
+                            <button type="submit" class="btn btn-secondary">Add Comment</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Display Comments -->
+        <div class="mt-5">
+            <h4>All Comments</h4>
+            {% if comments %}
+                <div class="list-group">
+                    {% for comment in comments %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ comment.author.username }}</strong>
+                                <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <p class="mt-2">{{ comment.content }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No comments yet.</p>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
