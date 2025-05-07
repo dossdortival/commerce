@@ -17,7 +17,7 @@
                                 </h5>
                                 <form action="{% url 'watchlist_remove' listing.id %}" method="post">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from watchlist">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from watchlist">Remove
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </form>
